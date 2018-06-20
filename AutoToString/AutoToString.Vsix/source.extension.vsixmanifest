@@ -5,7 +5,7 @@
         <DisplayName>AutoToString</DisplayName>
         <Description xml:space="preserve">Simple ToString generation for classes, prints all the public properties</Description>
         <MoreInfo>https://github.com/davidelettieri/auto-tostring</MoreInfo>
-        <License>https://github.com/davidelettieri/auto-tostring/blob/master/LICENSE</License>
+        <License>license.txt</License>
     </Metadata>
     <Installation>
         <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[15.0,)" />
