@@ -41,24 +41,13 @@ namespace AutoToString
             return cds.Members.OfType<MethodDeclarationSyntax>().Any(p => p.Identifier.ValueText == "ToString");
         }
 
-        private async Task<Document> GenerateToStringAsync(Document document, StructDeclarationSyntax structDec, CancellationToken cancellationToken)
+        private async Task<Document> GenerateToStringAsync(Document document, TypeDeclarationSyntax structDec, CancellationToken cancellationToken)
         {
             var newClassDec = structDec.AddMembers(GetToStringDeclarationSyntax(structDec));
 
             var sr = await document.GetSyntaxRootAsync(cancellationToken);
 
             var nsr = sr.ReplaceNode(structDec, newClassDec);
-
-            return document.WithSyntaxRoot(nsr);
-        }
-
-        private async Task<Document> GenerateToStringAsync(Document document, ClassDeclarationSyntax classDec, CancellationToken cancellationToken)
-        {
-            var newClassDec = classDec.AddMembers(GetToStringDeclarationSyntax(classDec));
-
-            var sr = await document.GetSyntaxRootAsync(cancellationToken);
-
-            var nsr = sr.ReplaceNode(classDec, newClassDec);
 
             return document.WithSyntaxRoot(nsr);
         }
@@ -82,31 +71,13 @@ namespace AutoToString
         {
             var sm = semanticModel.GetDeclaredSymbol(classDeclarationSyntax);
 
-            var properties = FindAllProperties(sm);
+            var properties = Helpers.FindAllProperties(sm);
 
             var r = string.Join(", ", properties.Select(p => $"{{nameof({p})}}={{{p}}}"));
 
             var @return = SyntaxFactory.ReturnStatement(SyntaxFactory.ParseExpression("$\"{{" + r + "}}\""));
 
             return SyntaxFactory.Block(@return);
-        }
-
-        private IEnumerable<string> FindAllProperties(INamedTypeSymbol symbol)
-        {
-            var props = symbol.GetMembers().Where(p => p.Kind == SymbolKind.Property && p.DeclaredAccessibility == Accessibility.Public);
-
-            foreach (var item in props)
-            {
-                yield return item.Name;
-            }
-
-            if (!string.Equals(symbol.BaseType?.Name, "object", StringComparison.OrdinalIgnoreCase))
-            {
-                foreach (var item in FindAllProperties(symbol.BaseType))
-                {
-                    yield return item;
-                }
-            }
         }
     }
 
