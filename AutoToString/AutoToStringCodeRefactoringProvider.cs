@@ -22,31 +22,48 @@ namespace AutoToString
 
             var node = root.FindNode(context.Span);
 
-            var typeDecl = node as ClassDeclarationSyntax;
-
-            if (typeDecl == null || typeDecl.Members.OfType<MethodDeclarationSyntax>().Any(p => p.Identifier.ValueText == "ToString"))
+            if (node is ClassDeclarationSyntax cds && !HasToStringMethod(cds))
             {
-                return;
+                semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
+                var action = CodeAction.Create("Generate ToString()", c => GenerateToStringAsync(context.Document, cds, c));
+                context.RegisterRefactoring(action);
             }
-            semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
+            else if (node is StructDeclarationSyntax sds && !HasToStringMethod(sds))
+            {
+                semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
+                var action = CodeAction.Create("Generate ToString()", c => GenerateToStringAsync(context.Document, sds, c));
+                context.RegisterRefactoring(action);
+            }
+        }
 
-            var action = CodeAction.Create("Generate ToString()", c => GenerateToStringAsync(context.Document, typeDecl, c));
+        private bool HasToStringMethod(TypeDeclarationSyntax cds)
+        {
+            return cds.Members.OfType<MethodDeclarationSyntax>().Any(p => p.Identifier.ValueText == "ToString");
+        }
 
-            context.RegisterRefactoring(action);
+        private async Task<Document> GenerateToStringAsync(Document document, StructDeclarationSyntax structDec, CancellationToken cancellationToken)
+        {
+            var newClassDec = structDec.AddMembers(GetToStringDeclarationSyntax(structDec));
+
+            var sr = await document.GetSyntaxRootAsync(cancellationToken);
+
+            var nsr = sr.ReplaceNode(structDec, newClassDec);
+
+            return document.WithSyntaxRoot(nsr);
         }
 
         private async Task<Document> GenerateToStringAsync(Document document, ClassDeclarationSyntax classDec, CancellationToken cancellationToken)
         {
             var newClassDec = classDec.AddMembers(GetToStringDeclarationSyntax(classDec));
 
-            var sr = await document.GetSyntaxRootAsync();
+            var sr = await document.GetSyntaxRootAsync(cancellationToken);
 
             var nsr = sr.ReplaceNode(classDec, newClassDec);
 
             return document.WithSyntaxRoot(nsr);
         }
 
-        private MethodDeclarationSyntax GetToStringDeclarationSyntax(ClassDeclarationSyntax classDeclarationSyntax)
+        private MethodDeclarationSyntax GetToStringDeclarationSyntax(TypeDeclarationSyntax typeDeclarationSyntax)
         {
             return SyntaxFactory.MethodDeclaration(
                             SyntaxFactory.List<AttributeListSyntax>(),
@@ -57,15 +74,15 @@ namespace AutoToString
                             null,
                             SyntaxFactory.ParameterList(),
                             SyntaxFactory.List<TypeParameterConstraintClauseSyntax>(),
-                            GetToStringBody(classDeclarationSyntax),
+                            GetToStringBody(typeDeclarationSyntax),
                             null);
         }
 
-        private BlockSyntax GetToStringBody(ClassDeclarationSyntax classDeclarationSyntax)
+        private BlockSyntax GetToStringBody(TypeDeclarationSyntax classDeclarationSyntax)
         {
             var sm = semanticModel.GetDeclaredSymbol(classDeclarationSyntax);
 
-            var properties = FindAllProperties(sm); sm.GetMembers().Where(p => p.Kind == SymbolKind.Property);
+            var properties = FindAllProperties(sm);
 
             var r = string.Join(", ", properties.Select(p => $"{{nameof({p})}}={{{p}}}"));
 
