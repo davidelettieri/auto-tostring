@@ -71,12 +71,11 @@ namespace AutoToString
 
             var properties = Helpers.FindAllProperties(sm);
 
-            var r = string.Join(", ", properties.Select(p => $"{{nameof({p})}}={{{p}}}"));
+            var r = string.Join(", ", properties.Select(p => p.GetPrintedValue()));
 
             var @return = SyntaxFactory.ReturnStatement(SyntaxFactory.ParseExpression("$\"{{" + r + "}}\""));
 
             return SyntaxFactory.Block(@return);
         }
     }
-
 }

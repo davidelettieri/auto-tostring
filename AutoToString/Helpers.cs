@@ -8,13 +8,12 @@ namespace AutoToString
 {
     public static class Helpers
     {
-        public static IEnumerable<string> FindAllProperties(INamedTypeSymbol symbol)
+        public static IEnumerable<PropertyToPrint> FindAllProperties(INamedTypeSymbol symbol)
         {
-            var props = symbol.GetMembers().Where(p => p.Kind == SymbolKind.Property && p.DeclaredAccessibility == Accessibility.Public);
-
+            var props = symbol.GetMembers().Where(p => p.Kind == SymbolKind.Property && p.DeclaredAccessibility == Accessibility.Public).OfType<IPropertySymbol>();
             foreach (var item in props)
             {
-                yield return item.Name;
+                yield return new PropertyToPrint(item.Name, item.Type.IsValueType);
             }
 
             if (!string.Equals(symbol.BaseType?.Name, "object", StringComparison.OrdinalIgnoreCase))
