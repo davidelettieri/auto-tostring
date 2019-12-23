@@ -20,23 +20,60 @@ namespace AutoToString
 
             var node = root.FindNode(context.Span);
 
-            if (node.Parent is ClassBlockSyntax cds && !HasToStringMethod(cds))
+            if (node.Parent is ClassBlockSyntax cds)
             {
-                semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
-                var action = CodeAction.Create("Generate ToString()", c => GenerateToStringAsync(context.Document, cds, c));
-                context.RegisterRefactoring(action);
+                if (TryGetToStringMethod(cds, out var toStringMethod))
+                {
+                    await RegisterReplaceToString(context, cds, toStringMethod);
+                }
+                else
+                {
+                    await RegisterGenerateToString(context, cds);
+                }
             }
-            else if (node.Parent is StructureBlockSyntax sds && !HasToStringMethod(sds))
+            else if (node.Parent is StructureBlockSyntax sds)
             {
-                semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
-                var action = CodeAction.Create("Generate ToString()", c => GenerateToStringAsync(context.Document, sds, c));
-                context.RegisterRefactoring(action);
+                if (TryGetToStringMethod(sds, out var toStringMethod))
+                {
+                    await RegisterReplaceToString(context, sds, toStringMethod);
+                }
+                else
+                {
+                    await RegisterGenerateToString(context, sds);
+                }
             }
         }
 
-        private bool HasToStringMethod(TypeBlockSyntax cds)
+        private async Task RegisterReplaceToString(CodeRefactoringContext context, TypeBlockSyntax tds, MethodBlockSyntax toStringMethod)
         {
-            return cds.Members.OfType<MethodBlockSyntax>().Any(p => p.SubOrFunctionStatement.Identifier.ValueText == "ToString");
+            semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
+            var action = CodeAction.Create(Strings.ReplaceToString, c => ReplaceToStringAsync(context.Document, tds, toStringMethod, c));
+            context.RegisterRefactoring(action);
+        }
+
+        private async Task RegisterGenerateToString(CodeRefactoringContext context, TypeBlockSyntax cds)
+        {
+            semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
+            var action = CodeAction.Create(Strings.GenerateToString, c => GenerateToStringAsync(context.Document, cds, c));
+            context.RegisterRefactoring(action);
+        }
+
+        private bool TryGetToStringMethod(TypeBlockSyntax cds, out MethodBlockSyntax toStringMethod)
+        {
+            toStringMethod = cds.Members.OfType<MethodBlockSyntax>().FirstOrDefault(p => p.SubOrFunctionStatement.Identifier.ValueText == "ToString");
+
+            return toStringMethod != null;
+        }
+
+        private async Task<Document> ReplaceToStringAsync(Document document, TypeBlockSyntax typeDec, MethodBlockSyntax oldToString, CancellationToken cancellationToken)
+        {
+            var newClassDec = typeDec.ReplaceNode(oldToString, GetToStringDeclarationSyntax(typeDec));
+
+            var sr = await document.GetSyntaxRootAsync(cancellationToken);
+
+            var nsr = sr.ReplaceNode(typeDec, newClassDec);
+
+            return document.WithSyntaxRoot(nsr);
         }
 
         private async Task<Document> GenerateToStringAsync(Document document, TypeBlockSyntax typeBlockSyntax, CancellationToken cancellationToken)
@@ -54,7 +91,7 @@ namespace AutoToString
         {
             var subStatement = SyntaxFactory.FunctionStatement(SyntaxFactory.List<AttributeListSyntax>(),
                                                           SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.PublicKeyword), SyntaxFactory.Token(SyntaxKind.OverridesKeyword)),
-                                                          SyntaxFactory.Identifier("ToString"),
+                                                          SyntaxFactory.Identifier(Strings.ToStringMethod),
                                                           null,
                                                           SyntaxFactory.ParameterList(),
                                                           SyntaxFactory.SimpleAsClause(SyntaxFactory.IdentifierName("String")),
@@ -72,7 +109,7 @@ namespace AutoToString
 
             var properties = Helpers.FindAllProperties(sm);
 
-            var r = string.Join(", ", properties.Select(p => p.GetPrintedValue()));
+            var r = string.Join(", ", properties.Select(p => p.GetPrintedValueForVB()));
 
             return SyntaxFactory.ReturnStatement(SyntaxFactory.ParseExpression("$\"{{" + r + "}}\""));
         }
