@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
     <Metadata>
-        <Identity Id="AutoToString..c9d7ec9c-371c-4dbe-8a66-ae2506d6361f" Version="1.2.2" Language="en-US" Publisher="Davide Lettieri"/>
+        <Identity Id="AutoToString..c9d7ec9c-371c-4dbe-8a66-ae2506d6361f" Version="1.3.0" Language="en-US" Publisher="Davide Lettieri"/>
         <DisplayName>AutoToString</DisplayName>
         <Description xml:space="preserve">Simple ToString generation for classes and structs, prints all the public properties</Description>
         <MoreInfo>https://github.com/davidelettieri/auto-tostring</MoreInfo>

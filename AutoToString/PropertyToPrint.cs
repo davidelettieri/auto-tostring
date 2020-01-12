@@ -11,9 +11,14 @@
             IsValueType = isValueType;
         }
 
-        public string GetPrintedValue()
+        public string GetPrintedValueForCSharp()
         {
             return IsValueType ? $"{{nameof({Name})}}={{{Name}.ToString()}}" : $"{{nameof({Name})}}={{{Name}}}";
+        }
+
+        public string GetPrintedValueForVB()
+        {
+            return IsValueType ? $"{{NameOf({Name})}}={{{Name}.ToString()}}" : $"{{NameOf({Name})}}={{{Name}}}";
         }
     }
 }
