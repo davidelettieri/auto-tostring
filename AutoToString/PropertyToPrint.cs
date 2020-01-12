@@ -18,7 +18,7 @@
 
         public string GetPrintedValueForVB()
         {
-            return IsValueType ? $"NameOf({Name})}}={{{Name}.ToString()}}" : $"{{NameOf({Name})}}={{{Name}}}";
+            return IsValueType ? $"{{NameOf({Name})}}={{{Name}.ToString()}}" : $"{{NameOf({Name})}}={{{Name}}}";
         }
     }
 }

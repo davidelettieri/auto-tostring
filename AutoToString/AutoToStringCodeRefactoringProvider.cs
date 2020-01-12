@@ -60,7 +60,12 @@ namespace AutoToString
 
         private bool TryGetToStringMethod(TypeDeclarationSyntax cds, out MethodDeclarationSyntax toStringMethod)
         {
-            toStringMethod = cds.Members.OfType<MethodDeclarationSyntax>().FirstOrDefault(p => p.Identifier.ValueText == "ToString");
+            toStringMethod = cds.Members
+                                .OfType<MethodDeclarationSyntax>()
+                                .FirstOrDefault(p => p.Identifier.ValueText == "ToString" &&
+                                                     p.ParameterList.Parameters.Count == 0 &&
+                                                     p.Modifiers.Any(SyntaxKind.PublicKeyword) &&
+                                                     p.Modifiers.Any(SyntaxKind.OverrideKeyword));
 
             return toStringMethod != null;
         }
