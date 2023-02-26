@@ -13,7 +13,7 @@
 
         public string GetPrintedValueForCSharp()
         {
-            return IsValueType ? $"{{nameof({Name})}}={{{Name}.ToString()}}" : $"{{nameof({Name})}}={{{Name}}}";
+            return IsValueType ? $"{{ nameof({Name})}} = {{{Name}.ToString()}} " : $" {{nameof({Name})}} = {{{Name}}} ";
         }
 
         public string GetPrintedValueForVB()
